@@ -5,6 +5,8 @@ import imutils
 import pickle
 import cv2
 import os
+from os.path import dirname, join
+
 # construct the argument parser and parse the arguments
 
 ap = argparse.ArgumentParser()
@@ -22,24 +24,26 @@ args = vars(ap.parse_args())
 
 # load our serialized face detector from disk
 print("[INFO] loading face detector...")
-protoPath = os.path.sep.join([args["detector"], "deploy.prototxt"])
-modelPath = os.path.sep.join([args["detector"],
+dirname = os.path.dirname(__file__)
+protoPath = os.path.sep.join([dirname,args["detector"], "deploy.prototxt"])
+#protoPath = join(args["detector"], "deploy.prototxt")
+modelPath = os.path.sep.join([dirname,args["detector"],
 	"res10_300x300_ssd_iter_140000.caffemodel"])
 detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 # load our serialized face embedding model from disk
 print("[INFO] loading face recognizer...")
-embedder = cv2.dnn.readNetFromTorch(args["embedding_model"])
+embedder = cv2.dnn.readNetFromTorch(os.path.sep.join([dirname,args["embedding_model"]]))
 
 # grab the paths to the input images in our dataset
 print("[INFO] quantifying faces...")
-imagePaths = list(paths.list_images(args["dataset"]))
+imagePaths = list(paths.list_images(os.path.sep.join([dirname,args["dataset"]])))
 # initialize our lists of extracted facial embeddings and
 # corresponding people names
 knownEmbeddings = []
 knownNames = []
 # initialize the total number of faces processed
 total = 0
-
+print(len(imagePaths))
 # loop over the image paths
 for (i, imagePath) in enumerate(imagePaths):
 	# extract the person name from the image path
@@ -60,13 +64,14 @@ for (i, imagePath) in enumerate(imagePaths):
 	# faces in the input image
 	detector.setInput(imageBlob)
 	detections = detector.forward()
-
+	
     	# ensure at least one face was found
 	if len(detections) > 0:
 		# we're making the assumption that each image has only ONE
 		# face, so find the bounding box with the largest probability
 		i = np.argmax(detections[0, 0, :, 2])
 		confidence = detections[0, 0, i, 2]
+		
 		# ensure that the detection with the largest probability also
 		# means our minimum probability test (thus helping filter out
 		# weak detections)
@@ -78,12 +83,14 @@ for (i, imagePath) in enumerate(imagePaths):
 			# extract the face ROI and grab the ROI dimensions
 			face = image[startY:endY, startX:endX]
 			(fH, fW) = face.shape[:2]
+			
 			# ensure the face width and height are sufficiently large
 			if fW < 20 or fH < 20:
 				continue
             # construct a blob for the face ROI, then pass the blob
 			# through our face embedding model to obtain the 128-d
 			# quantification of the face
+			
 			faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
 				(96, 96), (0, 0, 0), swapRB=True, crop=False)
 			embedder.setInput(faceBlob)
@@ -97,6 +104,7 @@ for (i, imagePath) in enumerate(imagePaths):
 # dump the facial embeddings + names to disk
 print("[INFO] serializing {} encodings...".format(total))
 data = {"embeddings": knownEmbeddings, "names": knownNames}
-f = open(args["embeddings"], "wb")
+#print(type('output/embeddings.pickle'))
+f = open(os.path.join(os.path.dirname(__file__), args["embeddings"]), "wb")
 f.write(pickle.dumps(data))
 f.close()
