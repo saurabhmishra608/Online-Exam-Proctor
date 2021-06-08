@@ -97,6 +97,10 @@ while True:
 				(0, 0, 255), 2)
 			cv2.putText(frame, text, (startX, y),
 				cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+        
+
+        
+            
 	# update the FPS counter
 	fps.update()
     	# show the output frame
