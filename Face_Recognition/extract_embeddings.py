@@ -36,7 +36,8 @@ embedder = cv2.dnn.readNetFromTorch(os.path.sep.join([dirname,args["embedding_mo
 
 # grab the paths to the input images in our dataset
 print("[INFO] quantifying faces...")
-imagePaths = list(paths.list_images(os.path.sep.join([dirname,args["dataset"]])))
+#imagePaths = list(paths.list_images(os.path.sep.join([dirname,args["dataset"]])))
+imagePaths = list(paths.list_images(args["dataset"]))
 # initialize our lists of extracted facial embeddings and
 # corresponding people names
 knownEmbeddings = []

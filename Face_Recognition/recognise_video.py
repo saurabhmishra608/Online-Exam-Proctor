@@ -8,7 +8,10 @@ import pickle
 import time
 import cv2
 import os
+from GUI_student import *
+from tkinter import *
 # construct the argument parser and parse the arguments
+canvas = tk.Canvas(video1_frame,width=800,height=600)
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--detector", required=True,
 	help="path to OpenCV's deep learning face detector")
@@ -20,6 +23,7 @@ ap.add_argument("-l", "--le", required=True,
 	help="path to label encoder")
 ap.add_argument("-c", "--confidence", type=float, default=0.5,
 	help="minimum probability to filter weak detections")
+ap.add_argument("-v","--video_path",default = "lol",help = "path of the video")
 args = vars(ap.parse_args())
 
 # load our serialized face detector from disk
@@ -39,7 +43,13 @@ le = pickle.loads(open(os.path.sep.join([dirname,args["le"]]), "rb").read())
 
 # initialize the video stream, then allow the camera sensor to warm up
 print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
+
+if(args["video_path"]=="lol"):
+	vs = VideoStream(src=0).start()
+else:
+	vs = VideoStream(os.path.sep.join([dirname,args["video_path"]])).start()
+
+#vs = VideoStream(src=0).start()
 time.sleep(2.0)
 # start the FPS throughput estimator
 fps = FPS().start()
@@ -88,7 +98,11 @@ while True:
 			preds = recognizer.predict_proba(vec)[0]
 			j = np.argmax(preds)
 			proba = preds[j]
-			name = le.classes_[j]
+			if(proba>0.4):
+				name = le.classes_[j]
+			else:
+				name = "unknown"
+			
 			# draw the bounding box of the face along with the
 			# associated probability
 			text = "{}: {:.2f}%".format(name, proba * 100)
@@ -98,6 +112,7 @@ while True:
 			cv2.putText(frame, text, (startX, y),
 				cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
         
+		
 
         
             
@@ -105,6 +120,8 @@ while True:
 	fps.update()
     	# show the output frame
 	cv2.imshow("Frame", frame)
+	img = PhotoImage(frame)      
+	canvas.create_image(800,600, anchor=NW, image=img)  
 	key = cv2.waitKey(1) & 0xFF
 	# if the `q` key was pressed, break from the loop
 	if key == ord("q"):
